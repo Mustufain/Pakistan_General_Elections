@@ -10,25 +10,27 @@ import csv, json, sys
 ## email: abbasmustufain@gmail.com
 
 
-def get2002_ElectionResults(candidate_outputFile,vote_outputFile,party_outputFile):
+def get2002_ElectionResults_NA(candidate_outputFile,vote_outputFile,party_outputFile):
 
     # National Assembly 2002 Elections
 
-    getCandidateInformation(candidate_outputFile)
-    getVoteInformation(vote_outputFile)
-    getPartyPositionInfo(party_outputFile)
+    getCandidateInformation_NA(candidate_outputFile)
+    getVoteInformation_NA(vote_outputFile)
+    getPartyPositionInfo_NA(party_outputFile)
 
 
 
-def get2008_ElectionResults():
+def get2008_ElectionResults_NA(candidate):
 
-    return
+    getCandidateInformation_NA_2008(candidate)
+
+
 
 def get2013_ElectionResults():
 
     return
 
-def getCandidateInformation(data):
+def getCandidateInformation_NA(data):
 
     outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
     csvKeys = ['Constituency_No', 'Constituency_Name', 'Candidate_Name', 'Political_Party', 'Votes_Polled', 'Year',
@@ -57,6 +59,9 @@ def getCandidateInformation(data):
 
             if 'FEDERALLY ADMINISTERED' in row[1]:
                 prov = 'FATA'
+
+            if 'FEDERAL CAPITAL' in row[1]:
+                prov='FEDERAL'
 
             if 'PUNJAB' in row[1]:
                 prov = 'PUNJAB'
@@ -154,7 +159,7 @@ def getCandidateInformation(data):
 
     return
 
-def getVoteInformation(data):
+def getVoteInformation_NA(data):
 
     outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
     voteKeys = ['Constituency_No', 'Constituency_Name', 'Valid_Votes', 'Rejected_Votes', 'Total_Votes',
@@ -309,7 +314,7 @@ def getVoteInformation(data):
 
     return
 
-def getPartyPositionInfo(data):
+def getPartyPositionInfo_NA(data):
 
     csvKeys=['Party','No_Of_Seats_Secured','Total_Votes_Secured','Seats_Won(%)','Party_Votes_By_Total_Valid_Votes(%)','Year']
 
@@ -345,15 +350,168 @@ def getPartyPositionInfo(data):
                 output.writerow(csvrow)
                 csvrow = []
 
+def getCandidateInformation_NA_2008(data):
+
+    outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
+    csvKeys = ['Constituency_No', 'Constituency_Name', 'Candidate_Name', 'Political_Party', 'Votes_Polled', 'Year',
+               'Province', 'Sex']
+    output = csv.writer(data)
+    output.writerow(csvKeys)
+    prev_value = -1
+    const = ""
+    city = ""
+    constituency = ""
+    name = ""
+    pa = ""
+    vp = ""
+    year = ""
+    prov = ""
+    subset=False
+    count=0
+    check=0
+
+    with open('2008.csv', 'rb') as f:
+        reader = csv.reader(f)
+
+        for row in reader:
+
+            row=filter(None,row)
+            row=[x.rstrip() for x in row]
+
+            csvrow = []
+            try:
+                if 'NA-1' in row[0]:
+                    subset=True
+            except Exception as e:
+                pass
+
+            if(subset):
+
+
+
+                if (prev_value == 0):
+                    prev_value = prev_value + 1
+
+                try:
+                    if 'NA-' in row[0]:
+
+                        try:
+
+                            if row[0] == 'NA-126-Lahore-IX':
+
+                                const = 'NA-126'
+                                city = 'Lahore-IX'
+                                prev_value = 0
+
+                            elif row[0] == 'NA-130-Lahore-XIII':
+
+                                const = 'NA-130'
+                                city = 'Lahore-XIII'
+                                prev_value = 0
+
+                            prev_value = 0
+                            constituency = row[0]
+
+                            if len(constituency.split(' ')) > 2:
+
+                                const = constituency.split(' ')[0]
+                                city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
+
+                            else:
+
+                                const = constituency.split(' ')[0]
+                                city = constituency.split(' ')[1]
+
+                        except Exception as e:
+
+                            pass
+                except Exception as e:
+                    pass
+
+
+
+                if (prev_value > 0):
+
+                    if 'Valid Votes' in row[0]:
+                        prev_value = -1
+                        csvrow = []
+
+                    else:
+                        try:
+                            if len(row) == 5:
+                                name = row[1] + row[2]
+                                pa = row[3]
+                                vp=row[4]
+
+                            else:
+                                name=row[1]
+                                pa = row[2]
+                                vp = row[3]
+
+                            year = '2008'
+
+                            if city == 'D.I.':
+                                city = 'D.I.Khan'
+
+                            count=count + 1
+                            #print count
+                            csvrow.append(const)
+                            csvrow.append(city)
+                            csvrow.append(name)
+                            csvrow.append(pa)
+                            csvrow.append(vp)
+                            csvrow.append(year)
+
+                            if count < 265:
+                                csvrow.append('KPK')
+
+                            if count >= 265 and count<=448:
+
+                                csvrow.append('FATA')
+
+                            if 'Islamabad' in city:
+                                csvrow.append('FEDERAL')
+
+                            if count > 448 and count<=1465 and 'Islamabad' not in city:
+                                csvrow.append('PUNJAB')
+
+                            if count > 1465 and count<=2062:
+                                csvrow.append('SINDH')
+
+
+                            if count > 2062 and count<=2204:
+                                csvrow.append('BALOCHISTAN')
+
+                            ## test (small hack)
+                            if const=='NA-272':
+
+                                check=check + 1
+                            ##
+                            if check < 6:
+
+                                output.writerow(csvrow)
+
+                        except Exception as e:
+
+                            pass
+
+def getVoteInformation_NA_2008(data):
+
+    return
+
 if __name__ == '__main__':
 
-    fileOutputCand=sys.argv[1]       #candidate file
-    fileOutputVote = sys.argv[2]    #vote file
-    fileOutputParty = sys.argv[3]   #Party Position file
+    #fileOutputCand=sys.argv[1]       #candidate file
+    #fileOutputVote = sys.argv[2]    #vote file
+    #fileOutputParty = sys.argv[3]   #Party Position file
 
-    candidate_outputFile = open(fileOutputCand, 'w')
-    vote_outputFile = open(fileOutputVote,'w')
-    part_outputFile = open(fileOutputParty,'w')
 
-    get2002_ElectionResults(candidate_outputFile,vote_outputFile,part_outputFile)
 
+    #candidate_outputFile = open(fileOutputCand, 'w')
+    #vote_outputFile = open(fileOutputVote,'w')
+    #part_outputFile = open(fileOutputParty,'w')
+    #cand_2008=open('canidate_2008.csv','w')
+    vote_2008 = open('votes_2008.csv')
+    #get2002_ElectionResults_NA(candidate_outputFile,vote_outputFile,part_outputFile)
+    #get2008_ElectionResults_NA(cand_2008)
+    getVoteInformation_NA_2008(vote_2008)
