@@ -10,12 +10,13 @@ import csv, json, sys
 ## email: abbasmustufain@gmail.com
 
 
-def get2002_ElectionResults(candidate_outputFile,vote_outputFile):
+def get2002_ElectionResults(candidate_outputFile,vote_outputFile,party_outputFile):
 
     # National Assembly 2002 Elections
 
     getCandidateInformation(candidate_outputFile)
     getVoteInformation(vote_outputFile)
+    getPartyPositionInfo(party_outputFile)
 
 
 
@@ -157,7 +158,7 @@ def getVoteInformation(data):
 
     outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
     voteKeys = ['Constituency_No', 'Constituency_Name', 'Valid_Votes', 'Rejected_Votes', 'Total_Votes',
-                'Registered_Voters', 'Turnout', 'Year']
+                'Registered_Voters', 'Turnout(%)', 'Year']
     output = csv.writer(data)
     output.writerow(voteKeys)
     const_outlier=['NA-243','NA-244','NA-245']
@@ -257,12 +258,12 @@ def getVoteInformation(data):
 
                 if csvrow[0] in const_outlier:
 
-                    turnout = row[4] + row[5]
+                    turnout = row[4]
                     csvrow.append(turnout)
 
                 else:
 
-                    turnout = row[3] + row[4]
+                    turnout = row[3]
                     csvrow.append(turnout)
 
 
@@ -308,12 +309,51 @@ def getVoteInformation(data):
 
     return
 
+def getPartyPositionInfo(data):
+
+    csvKeys=['Party','No_Of_Seats_Secured','Total_Votes_Secured','Seats_Won(%)','Party_Votes_By_Total_Valid_Votes(%)','Year']
+
+    output = csv.writer(data)
+    output.writerow(csvKeys)
+    start = False
+    csvrow=[]
+    with open('Party_Position_NA.csv', 'rb') as f:
+        reader = csv.reader(f)
+        for row in reader:
+
+
+            row = filter(None,row)
+            row = [x.rstrip(' ') for x in row]
+
+            if row[0] == '1':
+
+                start = True
+
+            if row[0] == 'TOTAL':
+
+                start = False
+
+            if (start):
+
+                #Append here to csv
+                csvrow.append(row[1])
+                csvrow.append(row[2])
+                csvrow.append(row[3])
+                csvrow.append(row[4])
+                csvrow.append(row[5])
+                csvrow.append('2002')
+                output.writerow(csvrow)
+                csvrow = []
+
 if __name__ == '__main__':
 
     fileOutputCand=sys.argv[1]       #candidate file
     fileOutputVote = sys.argv[2]    #vote file
+    fileOutputParty = sys.argv[3]   #Party Position file
 
     candidate_outputFile = open(fileOutputCand, 'w')
     vote_outputFile = open(fileOutputVote,'w')
-    get2002_ElectionResults(candidate_outputFile,vote_outputFile)
+    part_outputFile = open(fileOutputParty,'w')
+
+    get2002_ElectionResults(candidate_outputFile,vote_outputFile,part_outputFile)
 
