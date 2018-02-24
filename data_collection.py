@@ -497,7 +497,195 @@ def getCandidateInformation_NA_2008(data):
 
 def getVoteInformation_NA_2008(data):
 
+    outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
+    voteKeys = ['Constituency_No', 'Constituency_Name', 'Valid_Votes', 'Rejected_Votes', 'Total_Votes',
+                'Registered_Voters', 'Turnout(%)', 'Year']
+    output = csv.writer(data)
+    output.writerow(voteKeys)
+    const_outlier = ['NA-243', 'NA-244', 'NA-245']
+
+    const = ""
+    city = ""
+    constituency = ""
+    year = "2008"
+    valid_votes = ""
+    rejected_votes = ""
+    registered_votes = ""
+    turnout = ""
+    total_votes = ""
+    csvrow = []
+    subset = False
+    check=-1
+    startAppend=False
+    end=0
+
+    with open('2008.csv', 'rb') as f:
+
+        reader = csv.reader(f)
+        for row in reader:
+
+            row=filter(None,row)
+            row=[x.rstrip() for x in row]
+
+            try:
+                if 'NA-1' in row[0]:
+                    subset = True
+            except Exception as e:
+                pass
+
+            if (subset):
+
+
+                startAppend = False
+
+                try:
+
+                    if 'NA-1 Peshawar-1' == row[0] and check<0:
+
+                        check=check + 1
+                        startAppend=True
+                        const = row[0].split(' ')[0]
+                        city = row[0].split(' ')[1]
+
+                    if 'NA-' in row[0] and 'NA-1 Peshawar-1'!=row[0]:
+
+                        startAppend = True
+                        constituency = row[0]
+
+                        if len(constituency.split(' ')) > 2:
+
+                            const = constituency.split(' ')[0]
+                            city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
+
+                            if city == 'D.I.':
+                                city = 'D.I.Khan'
+
+
+                        else:
+
+                            const = constituency.split(' ')[0]
+                            city = constituency.split(' ')[1]
+
+                            if city == 'D.I.':
+                                city = 'D.I.Khan'
+
+                except Exception as e:
+
+                    pass
+
+            try :
+
+
+                if '%' in row[0]:
+                    turnout = row[1]
+                    csvrow.append(turnout)
+
+                if 'Valid Votes' == row[0]:
+                    valid_votes = row[1]
+                    csvrow.append(valid_votes)
+
+                if 'Rejected Votes' == row[0]:
+                    rejected_votes = row[1]
+                    csvrow.append(rejected_votes)
+
+                if 'Total Votes' == row[0]:
+                    total_votes = row[1]
+                    csvrow.append(total_votes)
+
+                if 'Regd. Voters' == row[0]:
+                    registered_votes = row[1]
+                    csvrow.append(registered_votes)
+
+                if (startAppend):
+                    csvrow.append(const)
+                    csvrow.append(city)
+
+
+                if csvrow[0] == 'NA-119':   #outliers
+
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+
+                if csvrow[0] == 'NA-207':   #outliers
+
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+                    csvrow.append("")
+
+                if len(csvrow) == 7:
+                    csvrow.append(year)
+
+                if len(csvrow) == 8:
+
+                    end = end + 1
+
+                    if end < 272:
+
+                        output.writerow(csvrow)
+                        csvrow = []
+
+            except Exception as e:
+                pass
     return
+
+def getPartyPositionInfo_NA_2008(data):
+
+    csvKeys = ['Party', 'No_Of_Seats_Secured', 'Total_Votes_Secured', 'Seats_Won(%)',
+               'Party_Votes_By_Total_Valid_Votes(%)', 'Year']
+
+    output = csv.writer(data)
+    output.writerow(csvKeys)
+    csvrow=[]
+    response = urllib2.urlopen('https://en.wikipedia.org/wiki/Pakistani_general_election,_2008')
+    html = response.read()
+    soup = BeautifulSoup(html, 'html.parser')
+    party=soup.find("table", {"class" : "wikitable"})
+    for row in party.findAll('tr'):
+        col=row.findAll('td')
+        csvrow=[]
+
+        try:
+            party=col[0].text
+            votes=col[1].text
+            percent=col[2].text
+            seats= col[3].text
+            seats_won_per=round(float(seats)/float(271)*100,1)
+            year='2008'
+            #print seats_won_per
+            csvrow.append(party)
+            csvrow.append(seats)
+            csvrow.append(votes)
+            csvrow.append(seats_won_per)
+            csvrow.append(percent)
+            csvrow.append(year)
+
+            if party!='Total':
+
+                output.writerow(csvrow)
+        except Exception as e:
+            pass
+    return
+
+def getCandidateInformation_NA_2013(data):
+
+    return
+
+def getVoteInformation_NA_2013(data):
+
+    return
+
+def getPartyPositionInfo_NA_2013(data):
+
+    return
+
+
+
+
 
 if __name__ == '__main__':
 
@@ -511,7 +699,12 @@ if __name__ == '__main__':
     #vote_outputFile = open(fileOutputVote,'w')
     #part_outputFile = open(fileOutputParty,'w')
     #cand_2008=open('canidate_2008.csv','w')
-    vote_2008 = open('votes_2008.csv')
+    #vote_2008 = open('votes_2008.csv','w')
+    #party_2008=open('party_2008.csv','w')
     #get2002_ElectionResults_NA(candidate_outputFile,vote_outputFile,part_outputFile)
     #get2008_ElectionResults_NA(cand_2008)
-    getVoteInformation_NA_2008(vote_2008)
+    #getVoteInformation_NA_2008(vote_2008)
+
+    #getPartyPositionInfo_NA_2008(party_2008)
+
+    print '2013 left'
