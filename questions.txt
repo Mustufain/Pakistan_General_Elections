@@ -1,4 +1,5 @@
 1) in vote information 2008 NA-119 and NA-207 has missing information
 2) standarize poltiical party names 
-3) find sex of candidate (this is a feature in candidate file)
+3) find sex of candidate (this is a feature in candidate file) ?? (not sure about it)
 4) in party information 2008 BNP data missing
+5) political party missing from 2013 elections candidates file
