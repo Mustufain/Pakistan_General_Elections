@@ -29,7 +29,7 @@ def get2008_ElectionResults_NA(cand_2008,vote_2008,party_2008):
 
 def get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013):
 
-    getCandidateInformation_NA_2013(cand_2013)
+    #getCandidateInformation_NA_2013(cand_2013)
     #getVoteInformation_NA_2013(vote_2013)
     #getPartyPositionInfo_NA_2013(party_2013)
 
@@ -854,7 +854,165 @@ def getCandidateInformation_NA_2013(data):
 
 def getVoteInformation_NA_2013(data):
 
-    return
+    subset=False
+    voteKeys = ['Constituency_No', 'Constituency_Name', 'Valid_Votes', 'Rejected_Votes', 'Total_Votes',
+                'Registered_Voters', 'Turnout(%)', 'Year']
+    output = csv.writer(data)
+    output.writerow(voteKeys)
+    valid_votes = ""
+    rejected_votes = ""
+    registered_votes = ""
+    turnout = ""  # total/registered * 100
+    total_votes = ""
+    prev_value=0
+    const=""
+    city=""
+    startAppend=False
+    csvrow=[]
+    outlier_check=0
+    outlier_list=['NA-38','NA-46','NA-83','NA-237','NA-254']
+    outlier_list2 = ['NA-229','NA-230']
+    outlier_list3=['NA-103']
+    year='2013'
+    check=0
+    check1=0
+    with open('Notification-National-Assembly.csv') as f:
+        reader=csv.reader(f)
+        for row in reader:
+            row=filter(None,row)
+            row=[x.rstrip() for x in row]
+
+            try:
+                if 'NA-1' in row[0]:
+                    subset = True
+            except Exception as e:
+                pass
+
+            if (subset and len(row) != 0):
+
+                startAppend = False
+
+                try:
+                    if 'NA-' in row[0]:
+                        startAppend = True
+                        try:
+
+                            if row[0] == 'NA-126-Lahore-IX':
+
+                                const = 'NA-126'
+                                city = 'Lahore-IX'
+
+
+                            elif row[0] == 'NA-130-Lahore-XIII':
+
+                                const = 'NA-130'
+                                city = 'Lahore-XIII'
+
+
+
+                            constituency = row[0]
+
+                            if len(constituency.split(' ')) > 2:
+
+                                const = constituency.split(' ')[0]
+                                city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
+
+                            else:
+
+                                const = constituency.split(' ')[0]
+                                city = constituency.split(' ')[1]
+
+                        except Exception as e:
+
+                            pass
+                except Exception as e:
+                    pass
+
+                try:
+
+                    if (startAppend):
+                        csvrow.append(const)
+                        csvrow.append(city)
+
+                    if const in outlier_list:
+
+                        csvrow.append("")
+                        csvrow.append("")
+                        csvrow.append("")
+                        csvrow.append("")
+                        csvrow.append("")
+                        csvrow.append(year)
+                        output.writerow(csvrow)
+                        csvrow = []
+                        const=""
+
+
+                    elif const in outlier_list3:
+
+                        check1=check1 + 1
+                        if check1 == 3:
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append(year)
+                            output.writerow(csvrow)
+                            csvrow = []
+                            const = ""
+
+
+                    elif const in outlier_list2:
+                        check=check + 1
+                        if (check == 18):
+                            valid_votes = row[0]
+                            rejected_votes = row[1]
+                            total_votes = row[2]
+                            csvrow.append(valid_votes)
+                            csvrow.append(rejected_votes)
+                            csvrow.append(total_votes)
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append(year)
+                            output.writerow(csvrow)
+                            csvrow = []
+                            check=0
+
+                        elif check == 16 and const!='NA-229':
+
+                            valid_votes = row[0]
+                            rejected_votes = row[1]
+                            total_votes = row[2]
+                            csvrow.append(valid_votes)
+                            csvrow.append(rejected_votes)
+                            csvrow.append(total_votes)
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append(year)
+                            output.writerow(csvrow)
+                            csvrow = []
+                            check = 0
+
+                    else:
+
+                        if 'Total' in row:
+
+                            valid_votes = row[1]
+                            rejected_votes=row[2]
+                            total_votes = row[3]
+                            csvrow.append(valid_votes)
+                            csvrow.append(rejected_votes)
+                            csvrow.append(total_votes)
+                            csvrow.append("")
+                            csvrow.append("")
+                            csvrow.append(year)
+                            output.writerow(csvrow)
+                            csvrow=[]
+
+                except Exception as e:
+                    pass
+
+
 
 def getPartyPositionInfo_NA_2013(data):
     csvKeys = ['Party', 'No_Of_Seats_Secured', 'Total_Votes_Secured', 'Seats_Won(%)',
@@ -911,13 +1069,14 @@ if __name__ == '__main__':
     #vote_2008 = open('votes_2008.csv','w')
     #party_2008=open('party_2008.csv','w')
 
-    cand_2013=open('candidate_2013.csv','w')
-    vote_2013 = open('votes_2013.csv', 'w')
-    party_2013 = open('party_2013.csv', 'w')
+    #cand_2013=open('candidate_2013.csv','w')
+    #vote_2013 = open('votes_2013.csv', 'w')
+    #party_2013 = open('party_2013.csv', 'w')
 
     #get2002_ElectionResults_NA(candidate_outputFile,vote_outputFile,part_outputFile)
     #get2008_ElectionResults_NA(cand_2008,vote_2008,party_2008)
 
 
-    get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013)
+    #get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013)
 
+    
