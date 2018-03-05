@@ -3,3 +3,7 @@
 3) find sex of candidate (this is a feature in candidate file) ?? (not sure about it)
 4) in party information 2008 BNP data missing
 5) political party missing from 2013 elections candidates file
+
+
+https://www.electionpakistani.com/ge2013/NA-1.html
+http://test1947.ecp.gov.pk/ConstResult.aspx?Const_Id=NA-272&type=NA

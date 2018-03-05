@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import urllib2
 import csv, json, sys,pdfquery
+import re
 
 ## This script collects data of general elections of 2002,2008,2013
 ## It contains National Assembly and Provincial Assembly elections results
@@ -29,9 +30,9 @@ def get2008_ElectionResults_NA(cand_2008,vote_2008,party_2008):
 
 def get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013):
 
-    #getCandidateInformation_NA_2013(cand_2013)
-    #getVoteInformation_NA_2013(vote_2013)
-    #getPartyPositionInfo_NA_2013(party_2013)
+    getCandidateInformation_NA_2013(cand_2013)
+    getVoteInformation_NA_2013(vote_2013)
+    getPartyPositionInfo_NA_2013(party_2013)
 
 
 def getCandidateInformation_NA_2002(data):
@@ -312,11 +313,11 @@ def getVoteInformation_NA_2002(data):
                 csvrow.append(year)
 
             if len(csvrow) == 8 :
-                #print csvrow
+                print csvrow
                 output.writerow(csvrow)
                 csvrow = []
 
-    return
+
 
 def getPartyPositionInfo_NA_2002(data):
 
@@ -676,177 +677,206 @@ def getPartyPositionInfo_NA_2008(data):
 
 def getCandidateInformation_NA_2013(data):
 
-    outlier_list = ['NA-130-Lahore-XIII', 'NA-126-Lahore-IX']
     csvKeys = ['Constituency_No', 'Constituency_Name', 'Candidate_Name', 'Political_Party', 'Votes_Polled', 'Year',
                'Province']
     output = csv.writer(data)
     output.writerow(csvKeys)
-    prev_value = -1
-    const = ""
     city = ""
-    constituency = ""
-    name = ""
-    pa = ""
-    vp = ""
-    year = ""
+    const= ""
+    year = "2013"
     prov = ""
-    subset = False
-    count = 0
-    check = 0
-    row_outlier=['2','8640','8990']
-    name_outlier=['Ch. Nisar Ali Khan','Ch. Jaffar Iqbal','Tahir Iqbal Ch.','Makhdoomzada S.B.A. Sultan','Syed Naveed QamarShah','Dr. Muhammad Farooq Sattar','Abdul Hakeem Balouch','Molana Qamar ud Din']
-    cand_outlier=['Syed Haziq Ali Shah']
-    test=0 #testing
+    csvrow=[]
+    url_list=[]
+    check=0
+    base_url='http://www.electionpakistani.com/ge2013/NA-'
+    outlier_list=['NA-210','NA-230','NA-262','NA-269']
 
-    with open('Notification-National-Assembly.csv') as f:
-        reader=csv.reader(f)
-        for row in reader:
-            row=filter(None,row)
-            row=[x.rstrip() for x in row]
+    for i in range(1,273):
+        count=i
+        url=base_url+str(count)+'.htm'
+        url_list.append(url)
+    count=0
+    na=0
+    for url in url_list:
+        print url
+        check = 0
+        na=na+1
+        const='NA-'+str(na)
+        city=""
+        response=urllib2.urlopen(url)
+        html = response.read()
+        soup = BeautifulSoup(html, 'html.parser')
 
-            csvrow = []
-            try:
-                if 'NA-1' in row[0]:
-                    subset = True
-            except Exception as e:
-                pass
+        try:
 
-            if (subset and len(row)!=0):
+            table = soup.find('table',id="AutoNumber1")
+            rows = table.findAll('tr')
+            if len(rows)  == 1:
+                if const in outlier_list:
+                    rows = soup.findAll('tr')
+                    append=-1
 
+                    for row in rows:
 
-                if (prev_value == 0):
-                    prev_value = prev_value + 1
+                        csvrow = []
+                        csvrow.append(const)
+                        csvrow.append(city)
+                        font_face = row.findAll('font')
+                        for font in font_face:
 
-                try:
-                    if 'NA-' in row[0]:
+                            font = font.text.encode('utf-8')
+                            if font != "":
+                                fonttext = ' '.join(font.split())
+                                if fonttext == 'Votes':
+                                    append = append + 1
 
-                        try:
+                                if append == 0:
+                                    if fonttext != 'Votes':
+                                        csvrow.append(fonttext)
+                        if len(csvrow) > 2:
+                            csvrow.append(year)
+                            csvrow.append("")
+                            output.writerow(csvrow)
 
-                            if row[0] == 'NA-126-Lahore-IX':
+                elif const=='NA-254':
+                    rows = soup.findAll('tr')
+                    for row in rows:
+                        csvrow = []
+                        csvrow.append(const)
+                        csvrow.append(city)
+                        spans = row.findAll('span')
+                        for span in spans:
+                            span = span.text.encode('utf-8')
+                            if span != "":
+                                spantext = ' '.join(span.split())
+                                if 'NA 254' not in spantext:
+                                    csvrow.append(spantext)
 
-                                const = 'NA-126'
-                                city = 'Lahore-IX'
-                                prev_value = 0
-
-                            elif row[0] == 'NA-130-Lahore-XIII':
-
-                                const = 'NA-130'
-                                city = 'Lahore-XIII'
-                                prev_value = 0
-
-                            prev_value = 0
-                            constituency = row[0]
-
-                            if len(constituency.split(' ')) > 2:
-
-                                const = constituency.split(' ')[0]
-                                city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
-
-                            else:
-
-                                const = constituency.split(' ')[0]
-                                city = constituency.split(' ')[1]
-
-                        except Exception as e:
-
-                            pass
-                except Exception as e:
-                    pass
-
-                if (prev_value > 0):
-                    try:
-                        if 'Total' in row:
-                            prev_value = -1
-                            csvrow = []
-                    except Exception as e:
-                        pass
-
-                    else:
-                        try:
-                            if prev_value!=-1 and row[1] not in row_outlier:
-
-                                if len(row) ==3:
-                                    name=row[1]
-                                    vp=row[2]
-
-                                if len(row) ==4:
-
-                                    firstString = row[1].lower()
-                                    secondString=row[3].lower()
-
-                                    if firstString == secondString or firstString in secondString or row[1] in name_outlier:
-
-                                        name = row[1]
-                                        vp = row[2]
+                        if len(csvrow) > 2:
+                            csvrow.append(year)
+                            csvrow.append("")
+                            output.writerow(csvrow)
 
 
+                else:
+                    raise Exception('This is the exception you expect to handle')
+            else:
+                for row in rows:   #skip first row
+                    check=check+1
+
+                    if (check >1):
+                        count= count + 1
+                        csvrow=[]
+                        csvrow.append(const)
+                        csvrow.append(city)
+                        spans=row.findAll('span')
+
+                        if len(spans) > 0:
+                            if const=='NA-1' or const=='NA-3':
+                                spanCount = 0
+                                for span in spans:
+                                    spanCount = spanCount + 1
+                                    span = span.text.encode('utf-8')
+                                    spantext = ' '.join(span.split())
+                                    csvrow.append(spantext)
+
+                                if spanCount == 2:
+                                    fonts = row.findAll('font')
+
+                                    if len(fonts) == 3:
+                                        csvrow.append(fonts[2].text.encode('utf-8'))
                                     else:
+                                        csvrow.append(fonts[0].text.encode('utf-8'))
 
-                                        name=row[1]+row[2]
-                                        vp=row[3]
-
-
-                                pa = ""
-                                year = '2013'
-
-                                if city == 'D.I.':
-                                    city = 'D.I.Khan'
-
-                                count = count + 1
-
-                                if name in cand_outlier:
-                                    const='NA-39'
-                                csvrow.append(const)
-                                csvrow.append(city)
-                                csvrow.append(name)
-                                csvrow.append(pa)
-                                csvrow.append(vp)
                                 csvrow.append(year)
+                                csvrow.append("")
+                                output.writerow(csvrow)
+                            else:
+                                # just for testing purposes
+                                fonts = row.findAll('font')
+                                if len(fonts) > 0:
+                                    fonts = row.findAll('font')
+                                    for font in fonts:
+                                        font = font.text.encode('utf-8')
+                                        fonttext = ' '.join(font.split())
+                                        csvrow.append(fonttext)
+                                    csvrow.append(year)
 
-                            if count < 517:
+                                csvrow.append("")
+                                output.writerow(csvrow)
+                         #############################
 
-                                prov='KPK'
-                                #print count, ':', prov
-                                csvrow.append(prov)
+                        else: #if no span tag then search for font tag
 
-                            elif count >= 517 and count <= 808:
-                                prov='FATA'
-                                #print count, ':', prov
-                                csvrow.append(prov)
+                            csvrow = []
+                            csvrow.append(const)
+                            csvrow.append(city)
+                            font_face = row.findAll('font')
+                            for font in font_face:
 
-                            elif 'ISLAMABAD' in city:
-                                prov='FEDERAL'
-                                #print count, ':', prov
-                                csvrow.append(prov)
+                                font = font.text.encode('utf-8')
+                                if font != "":
+                                    fonttext = ' '.join(font.split())
+                                    csvrow.append(fonttext)
 
-                            elif count > 885 and count <= 3159 and 'ISLAMABAD' not in city:
-                                prov='PUNJAB'
-                                #print count, ':', prov
-                                csvrow.append(prov)
-
-                            elif count > 3159 and count <= 4207:
-                                prov='SINDH'
-                                #print count, ':', prov
-                                csvrow.append(prov)
-
-                            elif count > 4207 and count <= 4494:
-                                prov='BALOCHISTAN'
-                                #print count, ':', prov
-                                csvrow.append(prov)
+                            if len(csvrow) > 2:
+                                if const == 'NA-38':
+                                    csvrow.append("")
+                                csvrow.append(year)
+                                output.writerow(csvrow)
 
 
-                            ## test (small hack)
-                            if const == 'NA-272':
-                                check = check + 1
-                            ##
-                            if check < 14:
-                                if len(csvrow)>1:  ##small hack
+        except Exception as e :
 
-                                    output.writerow(csvrow)
+            if const=='NA-138':
 
-                        except Exception as e:
+                table = soup.find('table', {"class": "MsoNormalTable"})
+                rows = table.findAll('tr')
+                for row in rows:
+                    check = check + 1
+                    if (check > 1):
+                        count = count + 1
+                        csvrow = []
+                        csvrow.append(const)
+                        csvrow.append(city)
+                        fonts = row.findAll('font')
+                        if len(fonts) > 0:
+                            for font in fonts:
+                                font = font.text.encode('utf-8')
+                                fonttext = ' '.join(font.split())
+                                if fonttext != "":
+                                    csvrow.append(fonttext)
+                            csvrow.append(year)
+                            csvrow.append("")
+                            output.writerow(csvrow)
 
-                            pass
+
+            else:
+
+                table = soup.find('table',  {"class" : "MsoNormalTable"})
+                rows = table.findAll('tr')
+                for row in rows:
+                    check = check + 1
+                    if (check > 1):
+                        count = count + 1
+                        csvrow = []
+                        csvrow.append(const)
+                        csvrow.append(city)
+                        spans = row.findAll('span')
+                        for span in spans:
+                            span = span.text.encode('utf-8')
+                            spantext = ' '.join(span.split())
+                            if spantext!="":
+                                csvrow.append(spantext)
+                        csvrow.append(year)
+
+                        csvrow.append("")
+                        output.writerow(csvrow)   #scraped from hamariweb.com
+
+
+
+
+
 
 
 
@@ -876,141 +906,158 @@ def getVoteInformation_NA_2013(data):
     year='2013'
     check=0
     check1=0
-    with open('Notification-National-Assembly.csv') as f:
-        reader=csv.reader(f)
-        for row in reader:
-            row=filter(None,row)
-            row=[x.rstrip() for x in row]
+    count=0
+    base_url='http://test1947.ecp.gov.pk/ConstResult.aspx?Const_Id=NA-'
+    vote_url= []
+    for i in range(1,272):
+        count=i
+        url=base_url+str(count)+'&type=NA'
+        vote_url.append(url)
 
-            try:
-                if 'NA-1' in row[0]:
-                    subset = True
-            except Exception as e:
-                pass
-
-            if (subset and len(row) != 0):
-
-                startAppend = False
-
-                try:
-                    if 'NA-' in row[0]:
-                        startAppend = True
-                        try:
-
-                            if row[0] == 'NA-126-Lahore-IX':
-
-                                const = 'NA-126'
-                                city = 'Lahore-IX'
+    #for url in vote_url:
+    response = urllib2.urlopen('http://test1947.ecp.gov.pk/ConstResult.aspx?Const_Id=NA-1&type=NA')
+    html = response.read()
+    #print html
+    soup = BeautifulSoup(html, 'html.parser')
+    table=soup.findAll("table")
+    print table
 
 
-                            elif row[0] == 'NA-130-Lahore-XIII':
-
-                                const = 'NA-130'
-                                city = 'Lahore-XIII'
-
-
-
-                            constituency = row[0]
-
-                            if len(constituency.split(' ')) > 2:
-
-                                const = constituency.split(' ')[0]
-                                city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
-
-                            else:
-
-                                const = constituency.split(' ')[0]
-                                city = constituency.split(' ')[1]
-
-                        except Exception as e:
-
-                            pass
-                except Exception as e:
-                    pass
-
-                try:
-
-                    if (startAppend):
-                        csvrow.append(const)
-                        csvrow.append(city)
-
-                    if const in outlier_list:
-
-                        csvrow.append("")
-                        csvrow.append("")
-                        csvrow.append("")
-                        csvrow.append("")
-                        csvrow.append("")
-                        csvrow.append(year)
-                        output.writerow(csvrow)
-                        csvrow = []
-                        const=""
-
-
-                    elif const in outlier_list3:
-
-                        check1=check1 + 1
-                        if check1 == 3:
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append(year)
-                            output.writerow(csvrow)
-                            csvrow = []
-                            const = ""
-
-
-                    elif const in outlier_list2:
-                        check=check + 1
-                        if (check == 18):
-                            valid_votes = row[0]
-                            rejected_votes = row[1]
-                            total_votes = row[2]
-                            csvrow.append(valid_votes)
-                            csvrow.append(rejected_votes)
-                            csvrow.append(total_votes)
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append(year)
-                            output.writerow(csvrow)
-                            csvrow = []
-                            check=0
-
-                        elif check == 16 and const!='NA-229':
-
-                            valid_votes = row[0]
-                            rejected_votes = row[1]
-                            total_votes = row[2]
-                            csvrow.append(valid_votes)
-                            csvrow.append(rejected_votes)
-                            csvrow.append(total_votes)
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append(year)
-                            output.writerow(csvrow)
-                            csvrow = []
-                            check = 0
-
-                    else:
-
-                        if 'Total' in row:
-
-                            valid_votes = row[1]
-                            rejected_votes=row[2]
-                            total_votes = row[3]
-                            csvrow.append(valid_votes)
-                            csvrow.append(rejected_votes)
-                            csvrow.append(total_votes)
-                            csvrow.append("")
-                            csvrow.append("")
-                            csvrow.append(year)
-                            output.writerow(csvrow)
-                            csvrow=[]
-
-                except Exception as e:
-                    pass
+    # with open('Notification-National-Assembly.csv') as f:
+    #     reader=csv.reader(f)
+    #     for row in reader:
+    #         row=filter(None,row)
+    #         row=[x.rstrip() for x in row]
+    #
+    #         try:
+    #             if 'NA-1' in row[0]:
+    #                 subset = True
+    #         except Exception as e:
+    #             pass
+    #
+    #         if (subset and len(row) != 0):
+    #
+    #             startAppend = False
+    #
+    #             try:
+    #                 if 'NA-' in row[0]:
+    #                     startAppend = True
+    #                     try:
+    #
+    #                         if row[0] == 'NA-126-Lahore-IX':
+    #
+    #                             const = 'NA-126'
+    #                             city = 'Lahore-IX'
+    #
+    #
+    #                         elif row[0] == 'NA-130-Lahore-XIII':
+    #
+    #                             const = 'NA-130'
+    #                             city = 'Lahore-XIII'
+    #
+    #
+    #
+    #                         constituency = row[0]
+    #
+    #                         if len(constituency.split(' ')) > 2:
+    #
+    #                             const = constituency.split(' ')[0]
+    #                             city = ''.join(constituency.split(' ')[1:len(constituency.split(' '))])
+    #
+    #                         else:
+    #
+    #                             const = constituency.split(' ')[0]
+    #                             city = constituency.split(' ')[1]
+    #
+    #                     except Exception as e:
+    #
+    #                         pass
+    #             except Exception as e:
+    #                 pass
+    #
+    #             try:
+    #
+    #                 if (startAppend):
+    #                     csvrow.append(const)
+    #                     csvrow.append(city)
+    #
+    #                 if const in outlier_list:
+    #
+    #                     csvrow.append("")
+    #                     csvrow.append("")
+    #                     csvrow.append("")
+    #                     csvrow.append("")
+    #                     csvrow.append("")
+    #                     csvrow.append(year)
+    #                     output.writerow(csvrow)
+    #                     csvrow = []
+    #                     const=""
+    #
+    #
+    #                 elif const in outlier_list3:
+    #
+    #                     check1=check1 + 1
+    #                     if check1 == 3:
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append(year)
+    #                         output.writerow(csvrow)
+    #                         csvrow = []
+    #                         const = ""
+    #
+    #
+    #                 elif const in outlier_list2:
+    #                     check=check + 1
+    #                     if (check == 18):
+    #                         valid_votes = row[0]
+    #                         rejected_votes = row[1]
+    #                         total_votes = row[2]
+    #                         csvrow.append(valid_votes)
+    #                         csvrow.append(rejected_votes)
+    #                         csvrow.append(total_votes)
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append(year)
+    #                         output.writerow(csvrow)
+    #                         csvrow = []
+    #                         check=0
+    #
+    #                     elif check == 16 and const!='NA-229':
+    #
+    #                         valid_votes = row[0]
+    #                         rejected_votes = row[1]
+    #                         total_votes = row[2]
+    #                         csvrow.append(valid_votes)
+    #                         csvrow.append(rejected_votes)
+    #                         csvrow.append(total_votes)
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append(year)
+    #                         output.writerow(csvrow)
+    #                         csvrow = []
+    #                         check = 0
+    #
+    #                 else:
+    #
+    #                     if 'Total' in row:
+    #
+    #                         valid_votes = row[1]
+    #                         rejected_votes=row[2]
+    #                         total_votes = row[3]
+    #                         csvrow.append(valid_votes)
+    #                         csvrow.append(rejected_votes)
+    #                         csvrow.append(total_votes)
+    #                         csvrow.append("")
+    #                         csvrow.append("")
+    #                         csvrow.append(year)
+    #                         output.writerow(csvrow)
+    #                         csvrow=[]
+    #
+    #             except Exception as e:
+    #                 pass
 
 
 
@@ -1035,7 +1082,7 @@ def getPartyPositionInfo_NA_2013(data):
             percent = col[2].text
             seats = col[3].text
             seats_won_per = round(float(seats) / float(271) * 100, 1)
-            year = '2008'
+            year = '2013'
             # print seats_won_per
             csvrow.append(party)
             csvrow.append(seats)
@@ -1055,15 +1102,9 @@ def getPartyPositionInfo_NA_2013(data):
 
 if __name__ == '__main__':
 
-    #fileOutputCand=sys.argv[1]       #candidate file
-    #fileOutputVote = sys.argv[2]    #vote file
-    #fileOutputParty = sys.argv[3]   #Party Position file
-
-
-
-    #candidate_outputFile = open(fileOutputCand, 'w')
-    #vote_outputFile = open(fileOutputVote,'w')
-    #part_outputFile = open(fileOutputParty,'w')
+    #cand_2002 = open('canidate_2002.csv', 'w')
+    #vote_2002 = open('votes_2002.csv', 'w')
+    #party_2002 = open('party_2002.csv', 'w')
 
     #cand_2008=open('canidate_2008.csv','w')
     #vote_2008 = open('votes_2008.csv','w')
@@ -1073,10 +1114,10 @@ if __name__ == '__main__':
     #vote_2013 = open('votes_2013.csv', 'w')
     #party_2013 = open('party_2013.csv', 'w')
 
-    #get2002_ElectionResults_NA(candidate_outputFile,vote_outputFile,part_outputFile)
+    #get2002_ElectionResults_NA(cand_2002,vote_2002,party_2002)
     #get2008_ElectionResults_NA(cand_2008,vote_2008,party_2008)
 
+    #get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013)  #NA-7 vote not recorded of last candidate, NA-38 election postponed
 
-    #get2013_ElectionResults_NA(cand_2013,vote_2013,party_2013)
 
-    
+    print "fuck"
